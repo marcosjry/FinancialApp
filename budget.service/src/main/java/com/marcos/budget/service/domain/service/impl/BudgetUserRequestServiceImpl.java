@@ -74,6 +74,9 @@ public class BudgetUserRequestServiceImpl implements BudgetUserRequestService {
                         case "delete_budget":
                             this.handleDeleteBudget((RequestDeleteBudget) receivedRequest.getData(), response);
                             break;
+                        case "create_budget_transaction":
+                            this.handleCreateTransaction((RequestCreateTransactionBudget) receivedRequest.getData(), response);
+                            break;
                         default:
                             response.setMessage("Action not supported: " + receivedRequest.getAction());
                     }
@@ -129,7 +132,7 @@ public class BudgetUserRequestServiceImpl implements BudgetUserRequestService {
             response.setMessage("Error during budget creation.");
         }
     }
-    
+
     private void handleDeleteBudget(RequestDeleteBudget requestDeleteBudget, ResponseToOrchestrator response) {
         try {
             this.budgetService.deleteBudgetByName(requestDeleteBudget.getBudgetName(), requestDeleteBudget.getUserId());
@@ -138,6 +141,29 @@ public class BudgetUserRequestServiceImpl implements BudgetUserRequestService {
             response.setMessage("Budget name doesn't exist.");
         } catch (Exception e) {
             response.setMessage("Error during delete budget.");
+        }
+    }
+
+    private void handleCreateTransaction(RequestCreateTransactionBudget createTransaction, ResponseToOrchestrator response) {
+        try {
+            String budgetName = createTransaction.getTransactionDTO().budgetName();
+            Budget findedBudget = this.budgetService.findBudgetByNameAndUserId(budgetName, createTransaction.getUserId());
+            if(findedBudget == null) {
+                throw new BudgetNameOrUserIdException("Error with budgetName or userId.");
+            }
+
+            TransactionBudget createdTransaction = this.transactionService.createTransaction(createTransaction.getTransactionDTO(), createTransaction.getUserId(), findedBudget.getId());
+            findedBudget.getBudgetTransaction().add(createdTransaction);
+            findedBudget.calculaDespesaReceita();
+            this.budgetService.saveBudget(findedBudget);
+            response.setMessage("Transaction created.");
+
+        } catch (InvalidParameterException e) {
+            response.setMessage("Ivalid parameters, try again.");
+        } catch (BudgetNameOrUserIdException e) {
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setMessage("Error during create transaction, try again.");
         }
     }
 
