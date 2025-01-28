@@ -40,6 +40,7 @@ public class SecurityConfig {
                             response.sendRedirect("/acesso-negado");
                         }))
                 .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/").permitAll()
@@ -58,4 +59,28 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    @Bean
+    public SecuritySecrets securitySecrets() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            // Carrega o arquivo do classpath (src/main/resources)
+            Resource resource = new ClassPathResource("secrets.json");
+            // Lê o conteúdo do arquivo como InputStream
+            return mapper.readValue(resource.getInputStream(), SecuritySecrets.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Não foi possível carregar o arquivo de secrets", e);
+        }
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(Arrays.asList("http://localhost:8081", "http://localhost:8100"));  // Adicione os serviços de origem
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        corsConfig.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
+        return source;
+    }
 }
