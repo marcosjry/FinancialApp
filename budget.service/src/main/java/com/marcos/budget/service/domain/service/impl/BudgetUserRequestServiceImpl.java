@@ -71,6 +71,9 @@ public class BudgetUserRequestServiceImpl implements BudgetUserRequestService {
                         case "create_budget":
                             this.handleCreateBudget((RequestCreateBudgetDTO) receivedRequest.getData(), response);
                             break;
+                        case "delete_budget":
+                            this.handleDeleteBudget((RequestDeleteBudget) receivedRequest.getData(), response);
+                            break;
                         default:
                             response.setMessage("Action not supported: " + receivedRequest.getAction());
                     }
@@ -126,6 +129,16 @@ public class BudgetUserRequestServiceImpl implements BudgetUserRequestService {
             response.setMessage("Error during budget creation.");
         }
     }
-
+    
+    private void handleDeleteBudget(RequestDeleteBudget requestDeleteBudget, ResponseToOrchestrator response) {
+        try {
+            this.budgetService.deleteBudgetByName(requestDeleteBudget.getBudgetName(), requestDeleteBudget.getUserId());
+            response.setMessage("Budget deleted.");
+        } catch (NoSuchElementException e) {
+            response.setMessage("Budget name doesn't exist.");
+        } catch (Exception e) {
+            response.setMessage("Error during delete budget.");
+        }
+    }
 
 }
